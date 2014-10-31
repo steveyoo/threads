@@ -137,6 +137,10 @@ acquireLock3(int param){
     printf("Attempting to acquire the lock for the first time\n");
     sameLock->Acquire();
     printf("Acquired the lock\n");
+}
+
+void
+acquireLock4(int param){
     printf("Attempting to acquire the lock for the second time\n");
     sameLock->Acquire();
     printf("Acquired the lock the second time. This should not print\n");
@@ -149,6 +153,8 @@ acquireSameLock2(){
 
     Thread *t = new Thread("one");
     t->Fork(acquireLock3, 0);
+    t = new Thread("two");
+    t->Fork(acquireLock4, 0);
 }
 
 
@@ -535,6 +541,237 @@ deleteWaitCV(){
 }
 
 //----------------------------------------------------------------------
+// mailTest
+// Tests the mailbox implementation
+// Sends one message and recieves one message
+//----------------------------------------------------------------------
+Mailbox *mBox = NULL;
+int theMessage;
+int *theMessagePtr=&theMessage;
+
+void mailTest1(int param){
+    printf("Thread 1 Send a message\n");
+    mBox->Send(12);
+
+    printf("Thread 1 Finish send\n");
+}
+
+void mailTest2(int param){
+    printf("Thread 2 Try receiving the message\n");
+    mBox->Receive(theMessagePtr);
+
+    printf("Thread 2 The received message was: %i\n",theMessage);
+}
+
+
+void mailTest(){
+    DEBUG('t',"Entering mailTest");
+
+    printf("Create a new mailbox\n");
+    mBox = new Mailbox();
+
+    Thread *t = new Thread("one");
+    t->Fork(mailTest1, 0);
+    t = new Thread("two");
+    t->Fork(mailTest2, 0);
+}
+
+//----------------------------------------------------------------------
+// mailTestReverse
+// Tests the mailbox implementation
+// Receives one message before sending one message
+//----------------------------------------------------------------------
+void mailTestReverse1(int param){
+    printf("Thread 1 Try receiving the message\n");
+    mBox->Receive(theMessagePtr);
+
+    printf("Thread 1 The received message was: %i\n",theMessage);
+}
+
+void mailTestReverse2(int param){
+    printf("Thread 2 Send a message\n");
+    mBox->Send(24);
+
+    printf("Thread 2 Finish send\n");
+}
+
+
+void mailTestReverse(){
+    DEBUG('t',"Entering mailTestReverse");
+
+    printf("Create a new mailbox\n");
+    mBox = new Mailbox();
+
+    Thread *t = new Thread("one");
+    t->Fork(mailTestReverse1, 0);
+    t = new Thread("two");
+    t->Fork(mailTestReverse2, 0);
+}
+
+
+//----------------------------------------------------------------------
+// mailSendTest
+// Tests the mailbox implementation
+// Sends one message and see if it waits
+//----------------------------------------------------------------------
+
+void mailSendTest1(int param){
+    printf("Send a message\n");
+    mBox->Send(12);
+
+    printf("Finished send. This message should not appear\n");
+}
+
+void mailSendTest(){
+    DEBUG('t',"Entering mailSendTest");
+
+    printf("Create a new mailbox\n");
+    mBox = new Mailbox();
+
+    Thread *t = new Thread("one");
+    t->Fork(mailSendTest1, 0);
+}
+
+
+//----------------------------------------------------------------------
+// mailReceiveTest
+// Tests the mailbox implementation
+// Attempts to receive a message without a send call and sees if it
+// returns or waits
+//----------------------------------------------------------------------
+
+void mailReceiveTest1(int param){
+    printf("Receive a message\n");
+    mBox->Receive(theMessagePtr);
+
+    printf("Finished receive. This message should not appear\n");
+}
+
+void mailReceiveTest(){
+    DEBUG('t',"Entering mailReceiveTest");
+
+    printf("Create a new mailbox\n");
+    mBox = new Mailbox();
+
+    Thread *t = new Thread("one");
+    t->Fork(mailReceiveTest1, 0);
+}
+
+//----------------------------------------------------------------------
+// mailMultiTest
+// Sends multiple messages and recieves the messages
+//----------------------------------------------------------------------
+
+void mailMultiTest1(int param){
+    printf("Thread 1 is sending the message 11\n");
+    mBox->Send(11);
+
+    printf("Thread 1 finished sending the message\n");
+}
+
+void mailMultiTest2(int param){
+    printf("Thread 2 is sending the message 12\n");
+    mBox->Send(12);
+
+    printf("Thread 2 finished sending the message\n");
+}
+
+void mailMultiTest3(int param){
+    printf("Thread 3 is sending the message 13\n");
+    mBox->Send(13);
+
+    printf("Thread 3 finished sending the message\n");
+}
+
+void mailMultiTest4(int param){
+    printf("Receive first message from mailbox\n");
+    mBox->Receive(theMessagePtr);
+
+    printf("First recieve finished receiving the message with value: %i\n", theMessage);
+}
+
+void mailMultiTest5(int param){
+    printf("Receive first message from mailbox\n");
+    mBox->Receive(theMessagePtr);
+
+    printf("Second recieve finished receiving the message with value: %i\n", theMessage);
+}
+
+void mailMultiTest6(int param){
+    printf("Receive first message from mailbox\n");
+    mBox->Receive(theMessagePtr);
+
+    printf("Third recieve finished receiving the message with value: %i\n", theMessage);
+}
+void mailMultiTest(){
+    DEBUG('t',"Entering mailMultiTest");
+
+    printf("Create a new mailbox\n");
+    mBox = new Mailbox();
+
+    Thread *t = new Thread("one");
+    t->Fork(mailMultiTest1, 0);
+    t = new Thread("two");
+    t->Fork(mailMultiTest2, 0);
+    t = new Thread("three");
+    t->Fork(mailMultiTest3, 0);
+    t = new Thread("four");
+    t->Fork(mailMultiTest4, 0);
+    t = new Thread("five");
+    t->Fork(mailMultiTest5, 0);
+    t = new Thread("six");
+    t->Fork(mailMultiTest6, 0);
+
+}
+
+//----------------------------------------------------------------------
+// WhaleTest
+// Tests to see if the whales mate correctly
+//----------------------------------------------------------------------
+Whale *theWhale = NULL;
+
+void WhaleTest1(int param){
+    printf("Calling Male \n");
+    theWhale->Male();
+    printf("Thread 1 returned\n");
+
+}
+void WhaleTest2(int param){
+    printf("Calling Female \n");
+    theWhale->Female();
+    printf("Thread 2 returned\n");
+}
+void WhaleTest3(int param){
+    printf("Calling Matchmaker \n");
+    theWhale->Matchmaker();
+    printf("Thread 3 returned\n");
+}
+void WhaleTest4(int param){
+    printf("Calling Matchmaker2 \n");
+    theWhale->Matchmaker();
+    printf("Thread 4 returned\n");
+}
+void WhaleTest(){
+    DEBUG('t',"Entering WhaleTest");
+
+    printf("Create a new whale class\n");
+    theWhale = new Whale("theWhale");
+
+    Thread *t = new Thread("one");
+    t->Fork(WhaleTest1, 0);
+    t = new Thread("two");
+    t->Fork(WhaleTest3, 0);
+    t = new Thread("three");
+    t->Fork(WhaleTest4, 0);
+    t = new Thread("four");
+    t->Fork(WhaleTest2, 0);
+    t = new Thread("five");
+    t->Fork(WhaleTest1, 0);
+    t = new Thread("six");
+    t->Fork(WhaleTest2, 0);
+}
+
+//----------------------------------------------------------------------
 // ThreadTest
 //  Invoke a test routine.
 //----------------------------------------------------------------------
@@ -573,6 +810,18 @@ ThreadTest()
     deleteWaitLock(); break;
     case 15:
     deleteWaitCV(); break;
+    case 16:
+    mailTest(); break;
+    case 17:
+    mailTestReverse(); break;
+    case 18:
+    mailSendTest(); break;
+    case 19:
+    mailReceiveTest(); break;
+    case 20:
+    mailMultiTest(); break;
+    case 21:
+    WhaleTest(); break;
     default:
     printf("No test specified.\n");
     break;
