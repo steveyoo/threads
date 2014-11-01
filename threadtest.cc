@@ -154,9 +154,9 @@ acquireSameLock2(){
     sameLock = new Lock("sameLock");
 
     Thread *t = new Thread("one");
-    t->Fork(acquireLock3, 0);
-    t = new Thread("two");
     t->Fork(acquireLock4, 0);
+    t = new Thread("two");
+    t->Fork(acquireLock3, 0);
 }
 
 
@@ -299,10 +299,13 @@ signalThread(){
     testCond = new Condition("testCond");
 
     Thread *t = new Thread("one");
+    t->setPriority(3);
     t->Fork(signalThread1,0);  
     t = new Thread("two");
+    t->setPriority(2);
     t->Fork(signalThread2,0);
     t = new Thread("three");
+    t->setPriority(1);
     t->Fork(signalThread3,0);
 }
 
@@ -352,10 +355,13 @@ broadcastThread(){
     testCond = new Condition("testCond");
 
     Thread *t = new Thread("one");
+    t->setPriority(3);
     t->Fork(broadcastThread1,0);  
     t = new Thread("two");
+    t->setPriority(2);
     t->Fork(broadcastThread2,0);
     t = new Thread("three");
+    t->setPriority(1);
     t->Fork(broadcastThread3,0);
 }
 
@@ -451,8 +457,10 @@ signalLockCall(){
     testCond = new Condition("testCond");
 
     Thread *t = new Thread("one");
+    t->setPriority(2);
     t->Fork(signalLockCall1,0);
     t = new Thread("two");
+    t->setPriority(1);
     t->Fork(signalLockCall2,0);  
 }
 
@@ -496,10 +504,13 @@ deleteWaitLock(){
     heldLock = new Lock("heldLock");
 
     Thread *t = new Thread("one");
+    t->setPriority(3);
     t->Fork(deleteWaitLock1, 0);
     t = new Thread("two");
+    t->setPriority(2);
     t->Fork(deleteWaitLock2, 0);
     t = new Thread("three");
+    t->setPriority(1);
     t->Fork(deleteWaitLock3, 0);
 }
 
@@ -537,8 +548,11 @@ deleteWaitCV(){
     testCond = new Condition("testCond");
 
     Thread *t = new Thread("one");
+    t->setPriority(2);
     t->Fork(deleteWaitCV1,0);
+
     t = new Thread("two");
+    t->setPriority(1);
     t->Fork(deleteWaitCV2,0);  
 }
 
@@ -643,8 +657,10 @@ void mailTest(){
     mBox = new Mailbox();
 
     Thread *t = new Thread("one");
+    t->setPriority(2);
     t->Fork(mailTest1, 0);
     t = new Thread("two");
+    t->setPriority(1);
     t->Fork(mailTest2, 0);
 }
 
@@ -675,8 +691,10 @@ void mailTestReverse(){
     mBox = new Mailbox();
 
     Thread *t = new Thread("one");
+    t->setPriority(2);
     t->Fork(mailTestReverse1, 0);
     t = new Thread("two");
+    t->setPriority(1);
     t->Fork(mailTestReverse2, 0);
 }
 
@@ -782,16 +800,22 @@ void mailMultiTest(){
     mBox = new Mailbox();
 
     Thread *t = new Thread("one");
+    t->setPriority(6);
     t->Fork(mailMultiTest1, 0);
     t = new Thread("two");
+    t->setPriority(5);
     t->Fork(mailMultiTest2, 0);
     t = new Thread("three");
+    t->setPriority(4);
     t->Fork(mailMultiTest3, 0);
     t = new Thread("four");
+    t->setPriority(3);
     t->Fork(mailMultiTest4, 0);
     t = new Thread("five");
+    t->setPriority(2);
     t->Fork(mailMultiTest5, 0);
     t = new Thread("six");
+    t->setPriority(1);
     t->Fork(mailMultiTest6, 0);
 
 }
@@ -830,16 +854,22 @@ void WhaleTest(){
     theWhale = new Whale("theWhale");
 
     Thread *t = new Thread("one");
+    t->setPriority(6);
     t->Fork(WhaleTest1, 0);
     t = new Thread("two");
+    t->setPriority(5);
     t->Fork(WhaleTest3, 0);
     t = new Thread("three");
+    t->setPriority(4);
     t->Fork(WhaleTest4, 0);
     t = new Thread("four");
+    t->setPriority(3);
     t->Fork(WhaleTest2, 0);
     t = new Thread("five");
+    t->setPriority(2);
     t->Fork(WhaleTest1, 0);
     t = new Thread("six");
+    t->setPriority(1);
     t->Fork(WhaleTest2, 0);
 }
 
