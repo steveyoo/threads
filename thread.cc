@@ -38,6 +38,7 @@ Thread::Thread(char* threadName)
     stackTop = NULL;
     stack = NULL;
     status = JUST_CREATED;
+    priority = 0;
 #ifdef USER_PROGRAM
     space = NULL;
 #endif

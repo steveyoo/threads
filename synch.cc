@@ -67,7 +67,7 @@ Semaphore::P()
     IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
 
     while (value == 0) { 			// semaphore not available
-        queue->Append((void *)currentThread);	// so go to sleep
+        queue->SortedInsert((void *)currentThread, currentThread->getPriority()*(-1));	// so go to sleep
         currentThread->Sleep();
     }
     value--; 					// semaphore available,
@@ -118,7 +118,7 @@ void Lock::Acquire() {
 
     // While the lock is already held
     while (held) {           
-        queue->Append((void *)currentThread);   // Go to sleep
+        queue->SortedInsert((void *)currentThread, currentThread->getPriority()*(-1));   // Go to sleep
         currentThread->Sleep();
     }
 
@@ -154,7 +154,7 @@ Condition::Condition(char* debugName) {
     waitingList = new List;
 }
 Condition::~Condition() {
-    // Check to see if the waiting list is emty before allowing
+    // Check to see if the waiting list is empty before allowing
     // deletion of the condition variable
     ASSERT(waitingList->IsEmpty());
     delete waitingList;
@@ -165,11 +165,11 @@ void Condition::Wait(Lock* conditionLock) {
     // Release the lock
     conditionLock->Release();
     // Place the calling thread on the condition variable's waiting list
-    waitingList->Append((void *)currentThread);
+    waitingList->SortedInsert((void *)currentThread, currentThread->getPriority()*(-1));
     // Suspend the execution of the calling thread
     currentThread->Sleep();
 
-    // When it wakes up, require the lock
+    // When it wakes up, reacquire the lock
     conditionLock->Acquire();
 
     // Re-enable interrupts
@@ -185,7 +185,7 @@ void Condition::Signal(Lock* conditionLock) {
         // Disable interrupts
         IntStatus oldLevel = interrupt->SetLevel(IntOff);
 
-        // Calls one thread off the conditionv ariable's witing list
+        // Calls one thread off the condition variable's witing list
         // And marks it as eligible to run
         thread = (Thread *)waitingList->Remove();
         if (thread != NULL)    // make thread ready, consuming the V immediately

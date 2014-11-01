@@ -772,6 +772,274 @@ void WhaleTest(){
 }
 
 //----------------------------------------------------------------------
+// testPriority
+// Tests to see when a thread is added to the readyList, the thread
+// inserts into the readyList in sorted order.
+//----------------------------------------------------------------------
+void t1(int param) {
+    printf("Thread with priority 3 ran.\n");
+}
+void t2(int param) {
+    printf("Thread with priority -2 ran.\n");
+}
+void t3(int param) {
+    printf("Thread with priority 1 ran.\n");
+}
+void t4(int param) {
+    printf("Thread with priority 1v2 ran.\n");
+}
+void t5(int param) {
+    printf("Thread with priority 4 ran.\n");
+}
+void testPrioritySort() {
+    Thread *t = new Thread("3");
+    t->setPriority(3);
+    t->Fork(t1,0);
+    t = new Thread("-2");
+    t->setPriority(-2);
+    t->Fork(t2,0);
+    t = new Thread("1");
+    t->setPriority(1);
+    t->Fork(t3,0);
+    t = new Thread("1v2");
+    t->setPriority(1);
+    t->Fork(t4,0);
+    t = new Thread("4");
+    t->setPriority(4);
+    t->Fork(t5,0);
+}
+
+//----------------------------------------------------------------------
+// testContextSwitchCaseOne(Two,Three)
+// Tests to see that on a context switch, if there is a higher priority
+// thread at the head of the ready list, the higher priority thread will
+// run. If the thread at the head of the ready list has the same
+// priority, then context switch still happens, and the given thread is
+// prepended to the readylist.
+//
+// 3 CASES:
+// next = 4  rl = [3;1] - when the priority at the head is lower 
+// next = 3  rl = [4;4] - when the priority at the head is higher
+//                      - this case also shows that if the called thread
+//                        has a priority lower than the head, in this case
+//                        the second 4 in the rl, then it will sort itself
+//                        by priority when inserting back into the rl.
+// next = 4  rl = [4;1] - when the priority at the head is the same
+//----------------------------------------------------------------------
+
+void th1(int param) {
+    printf("th1 ran.\n");
+}
+void th2(int param) {
+    printf("th2 ran.\n");
+}
+void th3(int param) {
+    printf("th3 ran.\n");
+}
+
+void testContextSwitchCaseOne() {
+    Thread *t = new Thread("4");
+    t->setPriority(4);
+    t->Fork(th1,0);
+
+    t = new Thread("3");
+    t->setPriority(3);
+    t->Fork(th2,0);
+
+    t = new Thread("1");
+    t->setPriority(1);
+    t->Fork(th3,0);
+    printf("Order should be th1, th2, th3\n");
+}
+void testContextSwitchCaseTwo() {
+    Thread *t = new Thread("4");
+    t->setPriority(4);
+    t->Fork(th1,0);
+
+    t = new Thread("4v2");
+    t->setPriority(4);
+    t->Fork(th2,0);
+
+    t = new Thread("3");
+    t->setPriority(5);
+    t->Fork(th3,0);
+    t->setPriority(3);
+    printf("Order should be th1, th2, th3\n");
+}
+void testContextSwitchCaseThree() {
+    Thread *t = new Thread("4");
+    t->setPriority(4);
+    t->Fork(th1,0);
+
+    t = new Thread("4v2");
+    t->setPriority(4);
+    t->Fork(th2,0);
+
+    t = new Thread("1");
+    t->setPriority(1);
+    t->Fork(th3,0);
+    printf("Order should be th2, th1, th3\n");
+}
+
+//----------------------------------------------------------------------
+// testNoSort
+// Tests to see that a thread is not re-sorted when its priority is
+// changed.
+//----------------------------------------------------------------------
+void thr1(int param) {
+    printf("Thread with priority 4 ran.\n");
+}
+void thr2(int param) {
+    printf("Thread with priority 4v2 ran.\n");
+}
+void thr3(int param) {
+    printf("Thread with priority 3 ran.\n");
+}
+
+void testNoSort() {
+    Thread *t = new Thread("4");
+    t->setPriority(4);
+    t->Fork(thr1,0);
+
+    t = new Thread("4v2");
+    t->setPriority(4);
+    t->Fork(thr2,0);
+
+    t = new Thread("5");
+    t->setPriority(5);
+    t->Fork(thr3,0);
+    t->setPriority(3);
+    printf("Changed thr3's priority to 3.\n");    
+}
+
+//----------------------------------------------------------------------
+// testWaitPriorityLock, testWaitPriorityCV, testWaitPrioritySema
+// Tests to see when threads are waiting for a lock, semaphore, or 
+// condition variable, the highest priority waiting thread should be 
+// woken up first.
+//----------------------------------------------------------------------
+
+Lock *prioLock = NULL;
+void firstAcquireLock(int param) {
+    printf("Acquiring lock for the first time.\n");    
+    prioLock->Acquire();
+    printf("Lock acquired.\n");
+    printf("Yielding thread.\n");
+    currentThread->setPriority(0);
+    currentThread->Yield();
+    printf("Releasing lock.\n");
+    prioLock->Release();
+}
+void blockPrio1Lock(int param) {
+    printf("Trying to acquire the lock with priority 1.\n");
+    currentThread->setPriority(1);
+    prioLock->Acquire();
+    printf("Woke up from sleep priority 1. Fail.\n");
+}
+void blockPrio2Lock(int param) {
+    printf("Trying to acquire the lock with priority 2.\n");
+    currentThread->setPriority(2);
+    prioLock->Acquire();
+    printf("Woke up from sleep with priority 2. Success.\n");
+}
+
+
+void testWaitPriorityLock() {
+    prioLock = new Lock("prioLock");
+
+    Thread *t = new Thread("firstAcquire");
+    t->setPriority(3);
+    t->Fork(firstAcquireLock,0);
+
+    t = new Thread("blockPrio1");
+    t->setPriority(2);
+    t->Fork(blockPrio1Lock,0);
+
+    t = new Thread("blockPrio2");
+    t->setPriority(1);
+    t->Fork(blockPrio2Lock,0);
+}
+
+
+Lock *prioCondLock = NULL;
+Condition *prioCond = NULL;
+void firstWait(int param) {
+    printf("Acquiring lock for the first time.\n");    
+    prioCondLock->Acquire();
+    printf("Lock acquired.\n");
+    currentThread->setPriority(1);
+    printf("Waiting with priority 1.\n");
+    prioCond->Wait(prioCondLock);
+    printf("Woke up from sleep with priority 1. Fail.\n");
+}
+void secondWait(int param) {
+    prioCondLock->Acquire();
+    printf("Lock acquired.\n");
+    printf("Waiting with priority 2.\n");
+    prioCond->Wait(prioCondLock);
+    printf("Woke up from sleep with priority 2. Success.\n");
+}
+void signalPrio(int param) {
+    prioCondLock->Acquire();
+    printf("Lock acquired.\n");
+    prioCond->Signal(prioCondLock);
+    printf("Signaled.\n");
+    prioCondLock->Release();
+    printf("Lock released.\n");
+}
+
+void testWaitPriorityCV() {
+    prioCondLock = new Lock("prioCondLock");
+    prioCond = new Condition("prioCond");
+
+    Thread *t = new Thread("firstWait");
+    t->setPriority(3);
+    t->Fork(firstWait,0);
+
+    t = new Thread("secondWait");
+    t->setPriority(2);
+    t->Fork(secondWait,0);
+
+    t = new Thread("signalPrio");
+    t->setPriority(1);
+    t->Fork(signalPrio,0);
+}
+
+
+Semaphore *prioSem = NULL;
+void sleepSem1(int param) {
+    printf("Thread goes to sleeps with priority 2.\n");
+    currentThread->setPriority(2);
+    prioSem->P();
+}
+void sleepSem2(int param) {
+    printf("Thread goes to sleep with priority 3.\n");
+    currentThread->setPriority(3);    
+    prioSem->P();
+    printf("Thread with priority 3 woke up. Success.\n");
+
+}
+void wakeSem(int param) {
+    prioSem->V();    
+}
+
+void testWaitPrioritySema() {
+    prioSem = new Semaphore("eight",1);
+
+    Thread *t = new Thread("t1");
+    t->setPriority(3);
+    t->Fork(sleepSem1,0);
+
+    t = new Thread("t2");
+    t->setPriority(2);
+    t->Fork(sleepSem2,0);
+
+    t = new Thread("t3");
+    t->setPriority(1);
+    t->Fork(wakeSem,0);
+}
+
+//----------------------------------------------------------------------
 // ThreadTest
 //  Invoke a test routine.
 //----------------------------------------------------------------------
@@ -822,6 +1090,24 @@ ThreadTest()
     mailMultiTest(); break;
     case 21:
     WhaleTest(); break;
+
+    //Part 4 Tests
+    case 22:
+    testPrioritySort(); break;
+    case 23:
+    testContextSwitchCaseOne(); break;
+    case 24:
+    testContextSwitchCaseTwo(); break;
+    case 25:
+    testContextSwitchCaseThree(); break;
+    case 26:
+    testNoSort(); break;
+    case 27:
+    testWaitPriorityLock(); break;
+    case 28:
+    testWaitPriorityCV(); break;
+    case 29:
+    testWaitPrioritySema(); break;
     default:
     printf("No test specified.\n");
     break;

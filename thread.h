@@ -108,6 +108,14 @@ public:
         printf("%s, ", name);
     }
 
+    // Part 4
+    void setPriority(int newPriority) {
+        priority = newPriority;
+    }
+    int getPriority() {
+        return priority;
+    }
+
 private:
     // some of the private data for this class is listed above
 
@@ -116,6 +124,7 @@ private:
     // (If NULL, don't deallocate stack)
     ThreadStatus status;		// ready, running or blocked
     char* name;
+    int priority;
 
     void StackAllocate(VoidFunctionPtr func, int arg);
     // Allocate a stack for thread.
