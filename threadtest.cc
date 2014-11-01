@@ -1,3 +1,5 @@
+
+
 // threadtest.cc 
 //  Test cases for the threads assignment.
 
@@ -540,7 +542,77 @@ deleteWaitCV(){
     t->Fork(deleteWaitCV2,0);  
 }
 
+
+// helper function to test Jion;
+void printfSomeThing(){
+    int i;
+  for (i = 0; i <= 5; i++) {
+    currentThread->Yield();
+    printf(" hey here is a test %d\n" , i);
+    }
+}
+
+
+//__________________________________________________________________________
+//JointTest
+//
+// a thread that will be joined only is destroyed once Join has been called on it
+   void parentFunction() {
+    Thread *child = new Thread("parent fun", 1);
+
+    printf("Testing 1st test. Child will be deleted after joined is called\n");
+    currentThread->Yield();
+    currentThread->Yield();
+    currentThread->Yield();
+    printf("calling Join()......\n");
+    child->Fork((VoidFunctionPtr)printfSomeThing, 1);
+    child->Join();   // child call after Join will not inmmedetely be deleted.
+    if (child != NULL) {
+        printf("If you see me, you passed.\n");
+    }
+}
+
+
+
 //----------------------------------------------------------------------
+// NoBlockingAfterChildFinish
+//if a parent calls Join on a child and the child has finished executing, 
+//the parent does not block
+// 
+//----------------------------------------------------------------------
+void parentFunction7() {
+    Thread *child = new Thread("parent fun", 1);
+    printf("Testing 6th test. 2nd time join() from the same thread - seg fault.\n");
+    currentThread->Yield();
+    currentThread->Yield();
+    currentThread->Yield();
+    printf("First time calling Join() is FINE.\n");
+    child->Join();
+    printf("About to call the same thread to join 2nd time.\n");
+    printf("You should see the program ended and could easily lead to a segmentation fault.\n");
+    child->Join();
+    printf("Error, YOU SHOULD NOT SEE ME.\n");
+}
+
+void childFunction7()
+{
+  printf("I am child thread.\n");
+  currentThread->Yield();
+}
+
+
+void NoBlockingAfterChildFinish() {
+    Thread* parent = new Thread("parent", 0); // parent will not be joined
+    Thread* child = new Thread("child", 1); // child will be joined
+
+    parent->Fork((VoidFunctionPtr) parentFunction7, (int)child);
+    child->Fork((VoidFunctionPtr) childFunction7, 0);
+
+    printf("If you see this, thread test 7 is DONE.\n");
+}
+
+//----------------------------------------------------------------------
+
 // mailTest
 // Tests the mailbox implementation
 // Sends one message and recieves one message
@@ -1041,8 +1113,79 @@ void testWaitPrioritySema() {
 
 //----------------------------------------------------------------------
 // ThreadTest
+
+// callSelfTest
+//  thread does not call Join on itself,
+//----------------------------------------------------------------------
+
+void callSelfTest()
+{
+  printf("thread is calling it self.\n");
+  currentThread->Join();
+  printf("ERROR.!!!! You should call yourself\n");
+}
+
+//----------------------------------------------------------------------
+// JointTest
+// Join is only invoked on threads created to be joined
+//----------------------------------------------------------------------
+
+ Thread *child1 = new Thread("child1", 1); // be joined
+ Thread *child2 = new Thread("child1", 0); // NOt be joined
+
+ void notJoinedThreadTest() {
+        child1->Fork((VoidFunctionPtr)printfSomeThing, 1);
+    printf (" child1 is being joined\n");
+    child1->Join();
+    printf("child is being \n");
+    printf (" child2 is being joined\n");
+    child2->Fork((VoidFunctionPtr)printfSomeThing, 0);
+    printf (" should not print this statement");
+
+ }
+  
+
+
+//----------------------------------------------------------------------
+// NoForkJoin()
+// Join is only called on a thread that has forked.
+// it should be abort.
+//----------------------------------------------------------------------
+;
+void NoForkJoin () {
+    Thread *child = new Thread("no fork", 1);
+    child->Join();
+    printf("this statement should not be print because child has not fork yets\n");
+}
+
+//----------------------------------------------------------------------
+// JointTest
+//  Join is not called more than once on a thread
+//----------------------------------------------------------------------
+
+void callJoinTwice() {
+    printf("create a Join\n");
+    Thread *child = new Thread("callTWice\n", 1);
+
+    child->Fork((VoidFunctionPtr)printfSomeThing, 0);
+    
+    child->Join();
+    printf("called join first time\n");
+
+    child->Join();
+    printf("called join second time\n");
+    printf("this statement should not be print because join cannot be called more then noce\n");
+
+}
+
+
+//----------------------------------------------------------------------
+// JointTest
+
 //  Invoke a test routine.
 //----------------------------------------------------------------------
+
+
 
 void
 ThreadTest()
@@ -1078,6 +1221,7 @@ ThreadTest()
     deleteWaitLock(); break;
     case 15:
     deleteWaitCV(); break;
+
     case 16:
     mailTest(); break;
     case 17:
@@ -1108,6 +1252,24 @@ ThreadTest()
     testWaitPriorityCV(); break;
     case 29:
     testWaitPrioritySema(); break;
+
+    case 30: 
+    parentFunction(); break;
+    case 31:
+    callSelfTest(); break;
+    case 32:
+    notJoinedThreadTest();
+    break;
+    case 33:
+    NoForkJoin();  break;
+    case 34:
+    callJoinTwice(); break;
+    case 35: 
+    NoBlockingAfterChildFinish();
+    break;
+
+
+
     default:
     printf("No test specified.\n");
     break;

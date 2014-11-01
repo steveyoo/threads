@@ -1,3 +1,4 @@
+
 // thread.cc
 //	Routines to manage threads.  There are four main operations:
 //
@@ -45,6 +46,42 @@ Thread::Thread(char* threadName)
 }
 
 //----------------------------------------------------------------------
+// Thread::Thread
+//  Initialize a thread control block with two parms.
+//  Thread::Join(parm1, parm2). parm1 is the name of the thread.
+//  parm2 is int, 0 indicate thread will not be joined
+//                1 indicate thread will be joined
+//
+//  "threadName" is an arbitrary string, useful for debugging.
+//----------------------------------------------------------------------
+Thread::Thread(char* debugName, int join) {
+       name = debugName;
+       
+       // joinLock = new Lock("joinLock");
+       // joinCondition = new Condition("joinCondition");
+        stackTop = NULL;
+        stack = NULL;
+        isjoinCalled = false;
+        if (join > 1 ) join = 1; 
+        isJoinable = join;
+
+        joinCond = new Condition("join");
+        joinLock = new Lock("join lock");
+        joinCallCond = new Condition("isjoinCalled");
+       // JoinCalledLock = new Lock("is_join_call_lock");
+        finished = false;
+
+    #ifdef USER_PROGRAM
+        space = NULL;
+    #endif
+}
+
+
+
+
+
+
+//----------------------------------------------------------------------
 // Thread::~Thread
 // 	De-allocate a thread.
 //
@@ -63,7 +100,51 @@ Thread::~Thread()
     ASSERT(this != currentThread);
     if (stack != NULL)
         DeallocBoundedArray((char *) stack, StackSize * sizeof(int));
+
+    if (joinCond != NULL)
+        delete joinCond;
+    if (joinLock != NULL)
+        delete joinLock;
+    if (joinCallCond != NULL)
+        delete joinCallCond;
+//  if(JoinCalledLock != NULL)
+//      delete JoinCalledLock;
 }
+/*********************************************************************
+Thread:: Join
+ Join is function that stops the parent thread and run the child thread.
+ the one that calls Join is the parent thread. 
+*********************************************************************/
+
+void 
+Thread::Join(){
+
+    ASSERT(this->getIsJoinable() != 0);
+    ASSERT(status != JUST_CREATED);
+    ASSERT(this != currentThread);
+    ASSERT(this != NULL);
+
+
+    // if child is finish 
+    //  do nothing  
+    joinLock->Acquire();
+    if(this->getFinished() == true) {
+        ;
+    }
+    // if this(child) is not finish 
+    // make the parent (currentThread) wait;
+    // wait for signal
+    else {
+        joinCond->Wait(joinLock);
+    }
+    isjoinCalled = true;
+    joinCallCond->Signal(joinLock);
+    joinLock->Release();
+
+}
+
+
+
 
 //----------------------------------------------------------------------
 // Thread::Fork
@@ -83,7 +164,8 @@ Thread::~Thread()
 //
 //	"func" is the procedure to run concurrently.
 //	"arg" is a single argument to be passed to the procedure.
-//----------------------------------------------------------------------
+//---------------------------------------------------------------------- 
+
 
 void
 Thread::Fork(VoidFunctionPtr func, int arg)
@@ -113,8 +195,7 @@ Thread::Fork(VoidFunctionPtr func, int arg)
 // 	overflows by not putting large data structures on the stack.
 // 	Don't do this: void foo() { int bigArray[10000]; ... }
 //----------------------------------------------------------------------
-
-void
+void 
 Thread::CheckOverflow()
 {
     if (stack != NULL)
@@ -143,15 +224,40 @@ Thread::CheckOverflow()
 //
 void
 Thread::Finish ()
-{
-    (void) interrupt->SetLevel(IntOff);
-    ASSERT(this == currentThread);
+{   
+    if (isJoinable == 0) {
 
-    DEBUG('t', "Finishing thread \"%s\"\n", getName());
+        (void) interrupt->SetLevel(IntOff);
+        ASSERT(this == currentThread);
 
-    threadToBeDestroyed = currentThread;
-    Sleep();					// invokes SWITCH
+        DEBUG('t', "Finishing thread \"%s\"\n", getName());
+
+        threadToBeDestroyed = currentThread;
+        Sleep();					// invokes SWITCH
     // not reached
+    }
+    else {
+       // JoinCalledLock->Acquire();
+        joinLock->Acquire();
+        ASSERT(this == currentThread);
+
+        DEBUG('t', "Finishing thread \"%s\"\n", getName());
+
+        finished = true;
+        joinCond->Signal(joinLock);
+       
+        // this one use to protect the parenet thread.
+        while(!isjoinCalled){
+             joinCallCond->Wait(joinLock);
+        }
+
+        joinLock->Release();
+        isjoinCalled = false;
+
+        (void) interrupt->SetLevel(IntOff);
+        threadToBeDestroyed = currentThread;
+        Sleep();   
+    }
 }
 
 //----------------------------------------------------------------------

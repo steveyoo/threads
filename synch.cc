@@ -1,3 +1,4 @@
+
 // synch.cc
 //	Routines for synchronizing threads.  Three kinds of
 //	synchronization routines are defined here: semaphores, locks
@@ -24,7 +25,8 @@
 #include "copyright.h"
 #include "synch.h"
 #include "system.h"
-
+#include "thread.h"
+#include "sysdep.h"
 //----------------------------------------------------------------------
 // Semaphore::Semaphore
 // 	Initialize a semaphore, so that it can be used for synchronization.

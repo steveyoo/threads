@@ -37,8 +37,11 @@
 #ifndef THREAD_H
 #define THREAD_H
 
+
 #include "copyright.h"
 #include "utility.h"
+#include "sysdep.h"
+
 
 #ifdef USER_PROGRAM
 #include "machine.h"
@@ -73,6 +76,9 @@ extern void ThreadPrint(int arg);
 //  Some threads also belong to a user address space; threads
 //  that only run in the kernel have a NULL address space.
 
+
+class Lock;
+class Condition;
 class Thread {
 private:
     // NOTE: DO NOT CHANGE the order of these first two members.
@@ -81,13 +87,27 @@ private:
     int machineState[MachineStateSize];  // all registers except for stackTop
 
 public:
-    Thread(char* debugName);		// initialize a Thread
-    ~Thread(); 				// deallocate a Thread
+    Thread(char* debugName);                // intialize a Thread
+    Thread(char* debugName, int join);		// initialize a Thread
+    
+    ~Thread(); 				                // deallocate a Thread
     // NOTE -- thread being deleted
     // must not be running when delete
     // is called
 
     // basic thread operations
+
+    void Join(); //   calling Join to stop the parent thread and run the child thread
+
+    // dummy function
+    bool getFinished() {
+        return finished;
+    }
+    int getIsJoinable() {
+        return isJoinable;
+    }
+
+   
 
     void Fork(VoidFunctionPtr func, int arg); 	// Make thread run (*func)(arg)
     void Yield();  				// Relinquish the CPU if any
@@ -108,6 +128,7 @@ public:
         printf("%s, ", name);
     }
 
+
     // Part 4
     void setPriority(int newPriority) {
         priority = newPriority;
@@ -116,8 +137,20 @@ public:
         return priority;
     }
 
+
 private:
     // some of the private data for this class is listed above
+
+    // thread values for impelementing the Join
+    int isJoinable;     
+    bool finished;
+    bool isjoinCalled;
+    Condition *joinCond;
+    Condition *joinCallCond;
+    Lock *joinLock;
+  
+
+ 
 
     int* stack; 	 		// Bottom of the stack
     // NULL if this is the main thread
