@@ -289,9 +289,17 @@ Thread::Yield ()
     DEBUG('t', "Yielding thread \"%s\"\n", getName());
 
     nextThread = scheduler->FindNextToRun();
+        /* Yield would grab the next thread to run from the readylist, 
+    compare its priority with the current thread and then either run 
+    this thread if it has higher or equal priority, otherwise put it 
+    back on the ready list. -- essentially a no-op.*/
+
     if (nextThread != NULL) {
         scheduler->ReadyToRun(this);
-        scheduler->Run(nextThread);
+        if (currentThread->getPriority() > nextThread->getPriority())
+            scheduler->Run(currentThread);
+        else
+            scheduler->Run(nextThread);
     }
     (void) interrupt->SetLevel(oldLevel);
 }

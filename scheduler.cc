@@ -94,21 +94,6 @@ Scheduler::FindNextToRun ()
 void
 Scheduler::Run (Thread *nextThread)
 {
-    /*  check if there is a higher priority thread on the list
-        if so, run that instead
-    */
-    int *key = new int;
-    Thread *topThread = (Thread *)readyList->SortedRemove(key);
-    if (topThread != NULL) {
-        if (nextThread->getPriority() <= *key*(-1)) {
-            readyList->SortedInsert(nextThread, nextThread->getPriority()*(-1));
-            nextThread = topThread;
-        }
-        else {
-            readyList->SortedInsert(topThread, *key);
-        }
-    }
-
     Thread *oldThread = currentThread;
 
 #ifdef USER_PROGRAM			// ignore until running user programs 

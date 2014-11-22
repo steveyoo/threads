@@ -929,6 +929,11 @@ void testPrioritySort() {
 // next = 4  rl = [4;1] - when the priority at the head is the same
 //----------------------------------------------------------------------
 
+void th1CaseOne(int param) {
+    printf("th1 ran.\n");
+    currentThread->Yield();
+    printf("yield ignored because this thread has the highest priority, success.\n");
+}
 void th1(int param) {
     printf("th1 ran.\n");
 }
@@ -942,7 +947,7 @@ void th3(int param) {
 void testContextSwitchCaseOne() {
     Thread *t = new Thread("4");
     t->setPriority(4);
-    t->Fork(th1,0);
+    t->Fork(th1CaseOne,0);
 
     t = new Thread("3");
     t->setPriority(3);
@@ -980,7 +985,7 @@ void testContextSwitchCaseThree() {
     t = new Thread("1");
     t->setPriority(1);
     t->Fork(th3,0);
-    printf("Order should be th2, th1, th3\n");
+    printf("Order should be th1, th2, th3\n");
 }
 
 //----------------------------------------------------------------------
